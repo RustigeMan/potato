@@ -1,5 +1,3 @@
-mod color;
-pub use color::Color;
 mod render;
 pub use render::Renderer;
 //mod thread;
