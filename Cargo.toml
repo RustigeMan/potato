@@ -1,0 +1,9 @@
+[package]
+name = "potato"
+version = "0.1.0"
+authors = ["zany <asinlatearthurdent@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+rlua = "0.16.2"
+sfml = "0.14.0"
