@@ -9,6 +9,7 @@ use sfml::window::Key;
 pub enum InpMsg {
     KeyDown(Key),
     KeyUp(Key),
+    Exit,
 }
 
 pub fn run_thread(
@@ -20,6 +21,8 @@ pub fn run_thread(
             match message {
                 InpMsg::KeyDown(key_code) => input_state.set_key_down(key_code),
                 InpMsg::KeyUp(key_code) => input_state.set_key_up(key_code),
+
+                InpMsg::Exit => return,
             }
         }
     })

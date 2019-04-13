@@ -18,6 +18,9 @@ pub struct LuaApi<'ctx> {
     input_state: Arc<InputState>,
 }
 
+static SET_FAIL: &str = "Failed to set Lua value";
+static TABLE_FAIL: &str = "Failed to create table";
+static GFX_MSG_FAIL: &str = "Failed to send GFX message";
 impl<'ctx> LuaApi<'ctx> {
     pub fn new<'lua>(
         context: Context<'lua>,
@@ -35,38 +38,41 @@ impl<'ctx> LuaApi<'ctx> {
     fn add_api(&mut self, gfx_send: &SyncSender<GfxMsg>) {
         println!("Initializing Lua API");
         let globals = self.context.globals();
-        let gfx = self.context.create_table().unwrap();
+        let gfx = self.context.create_table().expect(TABLE_FAIL);
 
         let sender = gfx_send.clone();
         let clear_screen = self.create_function(move |_, ()| {
-            sender.send(GfxMsg::Clear).unwrap();
+            sender.send(GfxMsg::Clear).expect(GFX_MSG_FAIL);
             Ok(())
         });
 
         let sender = gfx_send.clone();
         let display = self.create_function(move |_, ()| {
-            sender.send(GfxMsg::Display).unwrap();
+            sender.send(GfxMsg::Display).expect(GFX_MSG_FAIL);
             Ok(())
         });
 
         let sender = gfx_send.clone();
         let load_img_with_id = self.create_function(move |_, (path, id): (String, u32)| {
             let img = Image(id);
-            sender.send(GfxMsg::LoadImg(path, img.clone())).unwrap();
+            sender
+                .send(GfxMsg::LoadImg(path, img.clone()))
+                .expect(GFX_MSG_FAIL);
             Ok(img)
         });
 
         let sender = gfx_send.clone();
         let draw_img = self.create_function(move |_, (img, x, y): (Image, f32, f32)| {
-            sender.send(GfxMsg::DrawImg(img, x, y)).unwrap();
+            sender.send(GfxMsg::DrawImg(img, x, y)).expect(GFX_MSG_FAIL);
             Ok(())
         });
 
-        gfx.set("clear_screen", clear_screen).unwrap();
-        gfx.set("display", display).unwrap();
-        gfx.set("load_img_with_id", load_img_with_id).unwrap();
-        gfx.set("draw_img", draw_img).unwrap();
-        globals.set("gfx", gfx).unwrap();
+        gfx.set("clear_screen", clear_screen).expect(SET_FAIL);
+        gfx.set("display", display).expect(SET_FAIL);
+        gfx.set("load_img_with_id", load_img_with_id)
+            .expect(SET_FAIL);
+        gfx.set("draw_img", draw_img).expect(SET_FAIL);
+        globals.set("gfx", gfx).expect(SET_FAIL);
         self.run(
             "
             gfx.load_img = 
@@ -80,9 +86,9 @@ impl<'ctx> LuaApi<'ctx> {
                 end)()
             ",
         )
-        .unwrap();
+        .expect("Failed to run lua code fragment to create function load_img()");
 
-        let inp = self.context.create_table().unwrap();
+        let inp = self.context.create_table().expect(TABLE_FAIL);
 
         let key_map = gen_key_map();
         let input_state = self.input_state.clone();
@@ -93,11 +99,11 @@ impl<'ctx> LuaApi<'ctx> {
             Ok(input_state.key_down(key.clone()))
         });
 
-        inp.set("key_down", key_down).unwrap();
+        inp.set("key_down", key_down).expect(SET_FAIL);
 
-        globals.set("inp", inp).unwrap();
+        globals.set("inp", inp).expect(SET_FAIL);
 
-        let sleep = self.create_function(|_, milliseconds: (f64)| {
+        let sleep = self.create_function(|_, milliseconds: f64| {
             let milliseconds = if milliseconds < 0.0 {
                 println!("WARNING: Trying to sleep for less than 0 milliseconds");
                 0
@@ -114,8 +120,8 @@ impl<'ctx> LuaApi<'ctx> {
             Ok((now - start).as_millis())
         });
 
-        globals.set("sleep", sleep).unwrap();
-        globals.set("ticks", ticks).unwrap();
+        globals.set("sleep", sleep).expect(SET_FAIL);
+        globals.set("ticks", ticks).expect(SET_FAIL);
     }
 
     fn create_function<A, R, F>(&mut self, fun: F) -> rlua::Function<'ctx>
@@ -124,7 +130,9 @@ impl<'ctx> LuaApi<'ctx> {
         R: ToLuaMulti<'ctx>,
         F: 'static + Send + Fn(Context<'ctx>, A) -> LuaResult<R>,
     {
-        self.context.create_function(fun).unwrap()
+        self.context
+            .create_function(fun)
+            .expect("Failed to create Lua function")
     }
 
     pub fn run(&mut self, code: &str) -> LuaResult<()> {

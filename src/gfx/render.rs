@@ -26,12 +26,16 @@ impl Renderer {
             Display => self.win.display(),
 
             LoadImg(path, id) => {
-                let texture = Texture::from_file(&path).unwrap();
+                let texture = Texture::from_file(&path)
+                    .expect(&format!("Could not load texture at: {}", &path));
                 self.textures.insert(id.id(), texture);
             }
 
-            DrawImg(id, x, y) => {
-                let texture = self.textures.get(&id.id()).unwrap();
+            DrawImg(img, x, y) => {
+                let texture = self
+                    .textures
+                    .get(&img.id())
+                    .expect(&format!("Could not get texture with ID: {}", &img.id()));
 
                 let mut sprite = Sprite::with_texture(&texture);
                 sprite.set_position((x, y));

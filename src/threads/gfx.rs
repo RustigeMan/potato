@@ -1,8 +1,6 @@
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 
-//use super::color::Color;
-
 use crate::lua_environment::Image;
 
 use sfml::window::Event;
@@ -23,7 +21,7 @@ pub enum GfxMsg {
 
 pub fn run_thread(gfx_recv: Receiver<GfxMsg>, inp_send: Sender<InpMsg>) -> thread::JoinHandle<()> {
     thread::spawn(move || {
-        let win = crate::init().unwrap();
+        let win = crate::init().expect("Initialization failed!");
         let mut renderer = Renderer::new(win);
 
         loop {
@@ -43,8 +41,12 @@ pub fn run_thread(gfx_recv: Receiver<GfxMsg>, inp_send: Sender<InpMsg>) -> threa
              */
             while let Some(event) = renderer.win().poll_event() {
                 match event {
-                    Event::KeyPressed { code, .. } => inp_send.send(InpMsg::KeyDown(code)).unwrap(),
-                    Event::KeyReleased { code, .. } => inp_send.send(InpMsg::KeyUp(code)).unwrap(),
+                    Event::KeyPressed { code, .. } => inp_send
+                        .send(InpMsg::KeyDown(code))
+                        .expect("Could not send KeyDown message!"),
+                    Event::KeyReleased { code, .. } => inp_send
+                        .send(InpMsg::KeyUp(code))
+                        .expect("Could not send KeyUp message!"),
                     _ => {}
                 }
             }
