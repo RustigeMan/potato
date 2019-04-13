@@ -1,5 +1,5 @@
-screen_width = 1366
-screen_height = 768
-window_title = "Moooooooon"
+screen_width = 800
+screen_height = 600
+full_screen = false
 vertical_sync = true
-full_screen = true
+window_title = "Moooooooon"

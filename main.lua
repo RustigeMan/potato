@@ -6,13 +6,15 @@ x = -256
 y = 0
 local up
 local down
-while x < 1366 and not inp.key_down('Escape') do
+local left
+local right
+while x < 800 and not inp.key_down('Escape') do
+    local frame_start = ticks()
+
     up    = inp.key_down('W') or inp.key_down('Up')
     down  = inp.key_down('S') or inp.key_down('Down')
     left  = inp.key_down('A') or inp.key_down('Left')
     right = inp.key_down('D') or inp.key_down('Right')
-    
-    local frame_start = ticks()
 
     gfx.clear_screen()
     gfx.draw_img(moon, x, y)
